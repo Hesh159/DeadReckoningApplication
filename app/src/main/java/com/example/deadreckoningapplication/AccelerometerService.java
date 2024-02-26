@@ -96,11 +96,7 @@ public class AccelerometerService implements SensorEventListener, SensorService 
         }
 
         float averageAcceleration = totalAccelerationForAxis / accelerationValues.size();
-        if (averageAcceleration < NOISE_THRESHOLD && averageAcceleration > (NOISE_THRESHOLD * -1)) {
-            averageAcceleration = 0;
-        }
-
-        return averageAcceleration;
+        return removeAccelerationNoise(averageAcceleration);
     }
 
     @Override

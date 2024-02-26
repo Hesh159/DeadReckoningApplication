@@ -19,6 +19,10 @@ public class BuildingMapActivity extends AppCompatActivity {
     private static final long MAP_SIZE_IN_DP = 373;
     private static final long MAP_SIZE_IN_METERS = 102;
 
+    private static final int X_AXIS_INDEX = 0;
+    private static final int Y_AXIS_INDEX = 1;
+    private static final int Z_AXIS_INDEX = 2;
+
     private static final int CLOSE_NORMALLY_RESPONSE_CODE = 100;
     private static final int SENSOR_UNAVAILABLE_RESPONSE_CODE = 200;
 
@@ -86,17 +90,16 @@ public class BuildingMapActivity extends AppCompatActivity {
             return;
         }
 
-        int dpToMove = getDpToMove(distanceTravelled);
         ViewGroup.MarginLayoutParams userIconMargins = (ViewGroup.MarginLayoutParams) userIcon.getLayoutParams();
-        int newTopMargin = userIconMargins.topMargin - dpToMove;
-        userIconMargins.setMargins(userIconMargins.leftMargin, newTopMargin, userIconMargins.rightMargin, userIconMargins.bottomMargin);
+        int newTopMargin = userIconMargins.topMargin - getDpToMove(distanceTravelled[Z_AXIS_INDEX]);
+        int newLeftMargin = userIconMargins.leftMargin - getDpToMove(distanceTravelled[X_AXIS_INDEX]);
+        userIconMargins.setMargins(newLeftMargin, newTopMargin, userIconMargins.rightMargin, userIconMargins.bottomMargin);
         userIcon.setLayoutParams(userIconMargins);
     }
 
-    private int getDpToMove(float[] distanceTravelled) {
-        float zAxisDistanceTravelled = distanceTravelled[2];
+    private int getDpToMove(float distanceTravelled) {
         long dpPerMeter = MAP_SIZE_IN_DP / MAP_SIZE_IN_METERS;
-        return Math.round(zAxisDistanceTravelled * dpPerMeter);
+        return Math.round(distanceTravelled * dpPerMeter);
     }
 
     //implement step counter together with accelerometer to improve accuracy
