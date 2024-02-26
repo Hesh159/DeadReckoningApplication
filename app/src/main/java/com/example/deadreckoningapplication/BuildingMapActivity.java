@@ -5,10 +5,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Objects;
 
 
 public class BuildingMapActivity extends AppCompatActivity {
@@ -17,10 +19,13 @@ public class BuildingMapActivity extends AppCompatActivity {
     private static final long MAP_SIZE_IN_DP = 373;
     private static final long MAP_SIZE_IN_METERS = 102;
 
+    private static final int CLOSE_NORMALLY_RESPONSE_CODE = 100;
+    private static final int SENSOR_UNAVAILABLE_RESPONSE_CODE = 200;
+
     private ImageView userIcon;
     private SensorHelperService sensorHelperService;
-    private Handler mapActivityHandler = new Handler(Looper.myLooper());
-    private final Runnable runnable = new Runnable() {
+    private final Handler mapActivityHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
+    private final Runnable mapRunnable = new Runnable() {
         @Override
         public void run() {
             updateUserIconPosition();
@@ -28,22 +33,40 @@ public class BuildingMapActivity extends AppCompatActivity {
         }
     };
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        sensorHelperService = new SensorHelperService(this);
-        sensorHelperService.registerListeners();
         setContentView(R.layout.activity_building_map_view);
         userIcon = findViewById(R.id.user_icon);
-        mapActivityHandler.postDelayed(runnable, RUN_PERIOD);
+        mapActivityHandler.postDelayed(mapRunnable, RUN_PERIOD);
+        createSensors();
+        validateSensors();
+    }
+
+    private void createSensors() {
+        sensorHelperService = new SensorHelperService(this);
+        sensorHelperService.registerListeners();
+    }
+
+    private void validateSensors() {
+        boolean necessarySensorsExist = sensorHelperService.validateSensors();
+        if (!necessarySensorsExist) {
+            setResult(SENSOR_UNAVAILABLE_RESPONSE_CODE);
+            close();
+        }
+    }
+
+    private void close() {
+        sensorHelperService.unregisterListeners();
+        mapActivityHandler.removeCallbacks(mapRunnable);
+        finish();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         sensorHelperService.unregisterListeners();
-        mapActivityHandler.removeCallbacks(runnable);
+        mapActivityHandler.removeCallbacks(mapRunnable);
     }
 
     @Override
@@ -55,7 +78,6 @@ public class BuildingMapActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mapActivityHandler.removeCallbacks(runnable);
     }
 
     private void updateUserIconPosition() {

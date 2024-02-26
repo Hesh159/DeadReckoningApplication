@@ -1,5 +1,7 @@
 package com.example.deadreckoningapplication;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -15,11 +17,13 @@ public class AccelerometerService implements SensorEventListener, SensorService 
     private static final float NOISE_THRESHOLD = 0.4f;
 
     private final SensorManager sensorManager;
+    private final Context context;
     private final float[] gravity = new float[3];
     private final ArrayList<float[]> accelerationValues = new ArrayList<>();
 
-    public AccelerometerService(SensorManager sensorManager) {
+    public AccelerometerService(SensorManager sensorManager, Context context) {
         this.sensorManager = sensorManager;
+        this.context = context;
     }
 
     public void registerListener() {
@@ -36,6 +40,11 @@ public class AccelerometerService implements SensorEventListener, SensorService 
     @Override
     public float[] getSensorResults() {
         return getAverageAcceleration();
+    }
+
+    @Override
+    public boolean sensorExistsOnDevice() {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_ACCELEROMETER);
     }
 
     @Override
@@ -86,7 +95,12 @@ public class AccelerometerService implements SensorEventListener, SensorService 
             totalAccelerationForAxis += accelerationValue[axis];
         }
 
-        return totalAccelerationForAxis / accelerationValues.size();
+        float averageAcceleration = totalAccelerationForAxis / accelerationValues.size();
+        if (averageAcceleration < NOISE_THRESHOLD && averageAcceleration > (NOISE_THRESHOLD * -1)) {
+            averageAcceleration = 0;
+        }
+
+        return averageAcceleration;
     }
 
     @Override

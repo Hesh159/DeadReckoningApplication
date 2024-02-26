@@ -12,6 +12,7 @@ public class SensorHelperService {
     private static final int ACCELERATION_UPDATE_TIME_MILLI = 500;
 
     private final SensorManager sensorManager;
+    private final Context context;
     private SensorService accelerometerService;
     private SensorService magnetometerService;
     private final List<SensorService> sensorServices = new ArrayList<>();
@@ -20,6 +21,7 @@ public class SensorHelperService {
 
     public SensorHelperService(Context context) {
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        this.context = context;
     }
 
     public void registerListeners() {
@@ -34,11 +36,25 @@ public class SensorHelperService {
             return;
         }
 
-        accelerometerService = new AccelerometerService(sensorManager);
-        magnetometerService = new MagnetometerService(sensorManager);
+        accelerometerService = new AccelerometerService(sensorManager, context);
+        magnetometerService = new MagnetometerService(sensorManager, context);
         sensorServices.add(accelerometerService);
         sensorServices.add(magnetometerService);
         sensorsCreated = true;
+    }
+
+    public boolean validateSensors() {
+        if (!sensorsCreated) {
+            return false;
+        }
+
+        for (SensorService sensorService : sensorServices) {
+            if (!sensorService.sensorExistsOnDevice()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void unregisterListeners() {

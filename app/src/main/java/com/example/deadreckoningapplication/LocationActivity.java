@@ -8,6 +8,11 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -16,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.material.snackbar.Snackbar;
 
 public class LocationActivity extends AppCompatActivity implements
         GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener,
@@ -23,10 +29,22 @@ public class LocationActivity extends AppCompatActivity implements
 
     private static final int LocationPermissionsRequestCode = 1;
 
+    private static final int CLOSE_NORMALLY_RESPONSE_CODE = 100;
+    private static final int SENSOR_UNAVAILABLE_RESPONSE_CODE = 200;
+    private static final String SENSOR_UNAVAILABLE_TEXT = "Error! The requisite sensors to run this application are unavailable on this device";
     private boolean locationPermissionsEnabled = true;
     private GoogleMap map;
     private Button wgbMapButton;
     private Intent wgbMapIntent;
+    private final ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            activityResult -> {
+                int resultCode = activityResult.getResultCode();
+                if (resultCode == SENSOR_UNAVAILABLE_RESPONSE_CODE) {
+                    Snackbar.make(findViewById(R.id.googleMapsViewLayout), SENSOR_UNAVAILABLE_TEXT, Snackbar.LENGTH_LONG).show();
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,8 +54,7 @@ public class LocationActivity extends AppCompatActivity implements
         wgbMapButton = findViewById(R.id.wgbButton);
         wgbMapButton.setOnClickListener(l -> {
             wgbMapIntent = new Intent(LocationActivity.this, BuildingMapActivity.class);
-            startActivity(wgbMapIntent);
-            finish();
+            activityResultLauncher.launch(wgbMapIntent);
         });
 
         SupportMapFragment mapFragment =  (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
