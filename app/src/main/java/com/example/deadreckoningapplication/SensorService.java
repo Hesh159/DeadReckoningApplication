@@ -7,4 +7,6 @@ public interface SensorService {
     void unregisterListener();
 
     float[] getSensorResults();
+
+    boolean sensorExistsOnDevice();
 }
