@@ -15,6 +15,7 @@ public class SensorHelperService {
     private final Context context;
     private SensorService accelerometerService;
     private SensorService magnetometerService;
+    private SensorService gravitySensorService;
     private final List<SensorService> sensorServices = new ArrayList<>();
     private boolean sensorsCreated = false;
     private long timeSinceAccelerationUpdate = 0;
@@ -36,10 +37,12 @@ public class SensorHelperService {
             return;
         }
 
-        accelerometerService = new AccelerometerService(sensorManager, context);
+        accelerometerService = new AccelerometerService(this, sensorManager, context);
         magnetometerService = new MagnetometerService(sensorManager, context);
+        gravitySensorService = new GravityService(sensorManager, context);
         sensorServices.add(accelerometerService);
         sensorServices.add(magnetometerService);
+        sensorServices.add(gravitySensorService);
         sensorsCreated = true;
     }
 
@@ -61,6 +64,10 @@ public class SensorHelperService {
         for (SensorService sensorService : sensorServices) {
             sensorService.unregisterListener();
         }
+    }
+
+    public float[] getGravity() {
+        return gravitySensorService.getSensorResults();
     }
 
     public float[] getDistanceTravelled() {

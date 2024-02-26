@@ -11,26 +11,28 @@ import java.util.ArrayList;
 
 public class AccelerometerService implements SensorEventListener, SensorService {
 
+    private static final int START_INDEX  = 0;
+    private static final int ARRAY_LENGTH = 3;
     private static final int X_AXIS_INDEX = 0;
     private static final int Y_AXIS_INDEX = 1;
     private static final int Z_AXIS_INDEX = 2;
     private static final float NOISE_THRESHOLD = 0.4f;
 
+    private final SensorHelperService sensorHelperService;
     private final SensorManager sensorManager;
     private final Context context;
     private final float[] gravity = new float[3];
     private final ArrayList<float[]> accelerationValues = new ArrayList<>();
 
-    public AccelerometerService(SensorManager sensorManager, Context context) {
+    public AccelerometerService(SensorHelperService sensorHelperService, SensorManager sensorManager, Context context) {
+        this.sensorHelperService = sensorHelperService;
         this.sensorManager = sensorManager;
         this.context = context;
     }
 
     public void registerListener() {
         Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        Sensor gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     public void unregisterListener() {
@@ -49,17 +51,13 @@ public class AccelerometerService implements SensorEventListener, SensorService 
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
-            setGravity(event);
-        } else if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            getCurrentGravityReading();
             setAcceleration(event);
-        }
     }
 
-    private void setGravity(SensorEvent gravitySensorResults) {
-        gravity[X_AXIS_INDEX] = gravitySensorResults.values[X_AXIS_INDEX];
-        gravity[Y_AXIS_INDEX] = gravitySensorResults.values[Y_AXIS_INDEX];
-        gravity[Z_AXIS_INDEX] = gravitySensorResults.values[Z_AXIS_INDEX];
+    private void getCurrentGravityReading() {
+        float[] gravitySensorResults = sensorHelperService.getGravity();
+        System.arraycopy(gravitySensorResults, START_INDEX, gravity, START_INDEX, ARRAY_LENGTH);
     }
 
     private void setAcceleration(SensorEvent accelerometerResults) {
