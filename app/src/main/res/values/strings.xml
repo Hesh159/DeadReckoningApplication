@@ -3,7 +3,7 @@
     <string name="magnetometer">Magnetometer: </string>
     <string name="acceleration">Acceleration: </string>
     <string name="step_counter">Step Counter: </string>
-    <string name="barometer">Barometer: </string>
+    <string name="barometer">Orientation: </string>
     <string name="latitude">Gps Latitude: </string>
     <string name="longitude">View Map </string>
     <string name="view_wgb_map">View WGB Map</string>

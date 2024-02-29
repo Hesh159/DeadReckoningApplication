@@ -5,10 +5,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.deadreckoningapplication.sensors.SensorHelperService;
 
 import java.util.Objects;
 
@@ -19,8 +20,16 @@ public class BuildingMapActivity extends AppCompatActivity {
     private static final long MAP_SIZE_IN_DP = 373;
     private static final long MAP_SIZE_IN_METERS = 102;
 
+    private static final int X_AXIS_INDEX = 0;
+    private static final int Y_AXIS_INDEX = 1;
+    private static final int Z_AXIS_INDEX = 2;
+
     private static final int CLOSE_NORMALLY_RESPONSE_CODE = 100;
     private static final int SENSOR_UNAVAILABLE_RESPONSE_CODE = 200;
+
+    private int forwardMovementAxisIndex = 2;
+    private int sidewaysMovementAxisIndex = 0;
+    private int rotationAxisIndex = 0;
 
     private ImageView userIcon;
     private SensorHelperService sensorHelperService;
@@ -28,10 +37,14 @@ public class BuildingMapActivity extends AppCompatActivity {
     private final Runnable mapRunnable = new Runnable() {
         @Override
         public void run() {
+            updateOrientation();
             updateUserIconPosition();
             mapActivityHandler.postDelayed(this, RUN_PERIOD);
         }
     };
+
+    private float[] orientation = new float[3];
+    private boolean deviceIsFlat;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,17 +99,41 @@ public class BuildingMapActivity extends AppCompatActivity {
             return;
         }
 
-        int dpToMove = getDpToMove(distanceTravelled);
         ViewGroup.MarginLayoutParams userIconMargins = (ViewGroup.MarginLayoutParams) userIcon.getLayoutParams();
-        int newTopMargin = userIconMargins.topMargin - dpToMove;
-        userIconMargins.setMargins(userIconMargins.leftMargin, newTopMargin, userIconMargins.rightMargin, userIconMargins.bottomMargin);
+        int newTopMargin = userIconMargins.topMargin - getDpToMove(distanceTravelled[forwardMovementAxisIndex]);
+        int newLeftMargin = userIconMargins.leftMargin - getDpToMove(distanceTravelled[sidewaysMovementAxisIndex]);
+        userIconMargins.setMargins(newLeftMargin, newTopMargin, userIconMargins.rightMargin, userIconMargins.bottomMargin);
         userIcon.setLayoutParams(userIconMargins);
     }
 
-    private int getDpToMove(float[] distanceTravelled) {
-        float zAxisDistanceTravelled = distanceTravelled[2];
+    private int getDpToMove(float distanceTravelled) {
         long dpPerMeter = MAP_SIZE_IN_DP / MAP_SIZE_IN_METERS;
-        return Math.round(zAxisDistanceTravelled * dpPerMeter);
+        return Math.round(distanceTravelled * dpPerMeter);
+    }
+
+    private void updateOrientation() {
+        float[] updatedOrientation = sensorHelperService.updateDirectionDeviceFacing();
+        if (updatedOrientation != null) {
+            System.arraycopy(updatedOrientation, 0, orientation, 0, 3);
+        }
+        deviceIsFlat = Math.toDegrees(orientation[Y_AXIS_INDEX]) > -45 || Math.toDegrees(orientation[Y_AXIS_INDEX]) < 45;
+        setOrientationParams(deviceIsFlat);
+        rotateIcon();
+    }
+
+    private void setOrientationParams(boolean deviceIsFlat) {
+        if (deviceIsFlat) {
+            forwardMovementAxisIndex = rotationAxisIndex = X_AXIS_INDEX;
+            sidewaysMovementAxisIndex = Z_AXIS_INDEX;
+        } else {
+            forwardMovementAxisIndex = rotationAxisIndex = Z_AXIS_INDEX;
+            sidewaysMovementAxisIndex = X_AXIS_INDEX;
+        }
+    }
+
+    private void rotateIcon() {
+        float rotationAngle = orientation[rotationAxisIndex] * -1;
+        userIcon.setRotation((float) Math.toDegrees(rotationAngle));
     }
 
     //implement step counter together with accelerometer to improve accuracy
@@ -104,5 +141,18 @@ public class BuildingMapActivity extends AppCompatActivity {
     //add the alpha documentation from the
     //magnetometer going in pocket, acceleration still moves same direction
     //
+    // get the variance
+    //kmann filter
+    //wieghted average
+    //get gravity over time and use average to tell if change floor / see if vibration of steps can be taken into account
+
+    // mid march report - treat like a small version of full report
+
+    //intro, analysis, design, implementation, testing/eval, conclusions,
+    //use requirements analysis for analysis section
+
+    //under what circumstances does it become inaccurate
+    //sensor fusion - taking data from multiple sensors to make a decision rather than a single sensor
+    //future work - role of machine learning
 
 }
