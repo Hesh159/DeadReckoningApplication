@@ -1,4 +1,4 @@
-package com.example.deadreckoningapplication;
+package com.example.deadreckoningapplication.sensors;
 
 public interface SensorService {
 

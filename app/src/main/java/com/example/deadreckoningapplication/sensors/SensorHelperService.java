@@ -1,4 +1,4 @@
-package com.example.deadreckoningapplication;
+package com.example.deadreckoningapplication.sensors;
 
 import android.content.Context;
 import android.hardware.SensorManager;
