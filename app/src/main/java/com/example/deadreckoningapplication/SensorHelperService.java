@@ -10,6 +10,7 @@ import java.util.List;
 public class SensorHelperService {
 
     private static final int ACCELERATION_UPDATE_TIME_MILLI = 500;
+    private static final int MAGNETOMETER_UPDATE_TIME_MILLI = 500;
 
     private final SensorManager sensorManager;
     private final Context context;
@@ -19,6 +20,10 @@ public class SensorHelperService {
     private final List<SensorService> sensorServices = new ArrayList<>();
     private boolean sensorsCreated = false;
     private long timeSinceAccelerationUpdate = 0;
+    private long timeSinceMagnetometerUpdate = 0;
+    private float[] lastAccelUpdateVals = new float[3];
+    private float[] rotationVals = new float[9];
+    private float[] orientationVals = new float[3];
 
     public SensorHelperService(Context context) {
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
@@ -77,6 +82,19 @@ public class SensorHelperService {
         }
 
         timeSinceAccelerationUpdate = millisecondsSinceEpoch;
-        return accelerometerService.getSensorResults();
+        System.arraycopy(accelerometerService.getSensorResults(), 0, lastAccelUpdateVals, 0, 3);
+        return lastAccelUpdateVals;
+    }
+
+    public float[] updateDirectionDeviceFacing() {
+        long millisecondsSinceEpoch = Instant.now().toEpochMilli();
+        if (!(millisecondsSinceEpoch - timeSinceMagnetometerUpdate > MAGNETOMETER_UPDATE_TIME_MILLI)) {
+            return null;
+        }
+
+        timeSinceMagnetometerUpdate = millisecondsSinceEpoch;
+        SensorManager.getRotationMatrix(rotationVals, null, lastAccelUpdateVals, magnetometerService.getSensorResults());
+        SensorManager.getOrientation(rotationVals, orientationVals);
+        return orientationVals;
     }
 }
