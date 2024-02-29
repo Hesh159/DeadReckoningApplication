@@ -9,13 +9,10 @@ import android.hardware.SensorManager;
 
 import java.util.ArrayList;
 
-public class AccelerometerService implements SensorEventListener, SensorService {
+public class AccelerometerService extends SensorReaderService implements SensorEventListener {
 
     private static final int START_INDEX  = 0;
     private static final int ARRAY_LENGTH = 3;
-    private static final int X_AXIS_INDEX = 0;
-    private static final int Y_AXIS_INDEX = 1;
-    private static final int Z_AXIS_INDEX = 2;
     private static final float NOISE_THRESHOLD = 0.4f;
 
     private final SensorHelperService sensorHelperService;
@@ -41,7 +38,8 @@ public class AccelerometerService implements SensorEventListener, SensorService 
 
     @Override
     public float[] getSensorResults() {
-        return getAverageAcceleration();
+        float[] averageAcceleration = getAverageSensorReading(accelerationValues);
+        return removeNoiseFromResult(averageAcceleration, NOISE_THRESHOLD);
     }
 
     @Override
@@ -64,37 +62,10 @@ public class AccelerometerService implements SensorEventListener, SensorService 
         float[] accelerationResults = accelerometerResults.values;
         float[] adjustedAccelerationResults = new float[3];
 
-        adjustedAccelerationResults[X_AXIS_INDEX] = removeAccelerationNoise(accelerationResults[X_AXIS_INDEX]) - gravity[X_AXIS_INDEX];
-        adjustedAccelerationResults[Y_AXIS_INDEX] = removeAccelerationNoise(accelerationResults[Y_AXIS_INDEX]) - gravity[Y_AXIS_INDEX];
-        adjustedAccelerationResults[Z_AXIS_INDEX] = removeAccelerationNoise(accelerationResults[Z_AXIS_INDEX]) - gravity[Z_AXIS_INDEX];
+        adjustedAccelerationResults[X_AXIS_INDEX] = (removeNoise(accelerationResults[X_AXIS_INDEX], NOISE_THRESHOLD)) - gravity[X_AXIS_INDEX];
+        adjustedAccelerationResults[Y_AXIS_INDEX] = (removeNoise(accelerationResults[Y_AXIS_INDEX], NOISE_THRESHOLD)) - gravity[Y_AXIS_INDEX];
+        adjustedAccelerationResults[Z_AXIS_INDEX] = (removeNoise(accelerationResults[Z_AXIS_INDEX], NOISE_THRESHOLD)) - gravity[Z_AXIS_INDEX];
         accelerationValues.add(adjustedAccelerationResults);
-    }
-
-    private float removeAccelerationNoise(float acceleration) {
-        if (acceleration < NOISE_THRESHOLD && acceleration > (NOISE_THRESHOLD * -1)) {
-            acceleration = 0;
-        }
-
-        return acceleration;
-    }
-
-    public float[] getAverageAcceleration() {
-        float[] averageAcceleration = new float[3];
-        averageAcceleration[X_AXIS_INDEX] = getAverageAccelerationForAxis(X_AXIS_INDEX);
-        averageAcceleration[Y_AXIS_INDEX] = getAverageAccelerationForAxis(Y_AXIS_INDEX);
-        averageAcceleration[Z_AXIS_INDEX] = getAverageAccelerationForAxis(Z_AXIS_INDEX);
-        accelerationValues.clear();
-        return averageAcceleration;
-    }
-
-    private float getAverageAccelerationForAxis(int axis) {
-        float totalAccelerationForAxis = 0;
-        for (float[] accelerationValue : accelerationValues) {
-            totalAccelerationForAxis += accelerationValue[axis];
-        }
-
-        float averageAcceleration = totalAccelerationForAxis / accelerationValues.size();
-        return removeAccelerationNoise(averageAcceleration);
     }
 
     @Override

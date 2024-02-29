@@ -9,11 +9,8 @@ import android.hardware.SensorManager;
 
 import java.util.ArrayList;
 
-public class MagnetometerService implements SensorEventListener, SensorService {
+public class MagnetometerService extends SensorReaderService implements SensorEventListener {
 
-    private static final int X_AXIS_INDEX = 0;
-    private static final int Y_AXIS_INDEX = 1;
-    private static final int Z_AXIS_INDEX = 2;
     private static final float NOISE_THRESHOLD = 0.2f;
 
     private final SensorManager sensorManager;
@@ -39,7 +36,8 @@ public class MagnetometerService implements SensorEventListener, SensorService {
 
     @Override
     public float[] getSensorResults() {
-        return getAverageMagnetometerReading();
+        float[] averageMagnetometerReading = getAverageSensorReading(magnetometerValues);
+        return removeNoiseFromResult(averageMagnetometerReading, NOISE_THRESHOLD);
     }
 
     @Override
@@ -56,37 +54,10 @@ public class MagnetometerService implements SensorEventListener, SensorService {
         float[] magnetometerResults = magnetometerReading.values;
         float[] adjustedMagnetometerResults = new float[3];
 
-        adjustedMagnetometerResults[X_AXIS_INDEX] = removeNoise(magnetometerResults[X_AXIS_INDEX]);
-        adjustedMagnetometerResults[Y_AXIS_INDEX] = removeNoise(magnetometerResults[Y_AXIS_INDEX]);
-        adjustedMagnetometerResults[Z_AXIS_INDEX] = removeNoise(magnetometerResults[Z_AXIS_INDEX]);
+        adjustedMagnetometerResults[X_AXIS_INDEX] = removeNoise(magnetometerResults[X_AXIS_INDEX], NOISE_THRESHOLD);
+        adjustedMagnetometerResults[Y_AXIS_INDEX] = removeNoise(magnetometerResults[Y_AXIS_INDEX], NOISE_THRESHOLD);
+        adjustedMagnetometerResults[Z_AXIS_INDEX] = removeNoise(magnetometerResults[Z_AXIS_INDEX], NOISE_THRESHOLD);
         magnetometerValues.add(adjustedMagnetometerResults);
-    }
-
-    private float removeNoise(float magnetometerReading) {
-        if (magnetometerReading < NOISE_THRESHOLD && magnetometerReading > (NOISE_THRESHOLD * -1)) {
-            magnetometerReading = 0;
-        }
-
-        return magnetometerReading;
-    }
-
-    public float[] getAverageMagnetometerReading() {
-        float[] averageMagnetometerReading = new float[3];
-        averageMagnetometerReading[X_AXIS_INDEX] = getAverageMagnetometerReadingForAxis(X_AXIS_INDEX);
-        averageMagnetometerReading[Y_AXIS_INDEX] = getAverageMagnetometerReadingForAxis(Y_AXIS_INDEX);
-        averageMagnetometerReading[Z_AXIS_INDEX] = getAverageMagnetometerReadingForAxis(Z_AXIS_INDEX);
-        magnetometerValues.clear();
-        return averageMagnetometerReading;
-    }
-
-    private float getAverageMagnetometerReadingForAxis(int axis) {
-        float total = 0;
-        for (float[] magnetometerReading : magnetometerValues) {
-            total += magnetometerReading[axis];
-        }
-
-        float averageMagnetometerReading = total / magnetometerValues.size();
-        return removeNoise(averageMagnetometerReading);
     }
 
     @Override
