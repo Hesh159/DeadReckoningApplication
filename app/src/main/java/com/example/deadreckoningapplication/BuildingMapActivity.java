@@ -25,16 +25,24 @@ public class BuildingMapActivity extends AppCompatActivity {
     private static final int CLOSE_NORMALLY_RESPONSE_CODE = 100;
     private static final int SENSOR_UNAVAILABLE_RESPONSE_CODE = 200;
 
+    private int forwardMovementAxisIndex = 2;
+    private int sidewaysMovementAxisIndex = 0;
+    private int rotationAxisIndex = 0;
+
     private ImageView userIcon;
     private SensorHelperService sensorHelperService;
     private final Handler mapActivityHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
     private final Runnable mapRunnable = new Runnable() {
         @Override
         public void run() {
+            updateOrientation();
             updateUserIconPosition();
             mapActivityHandler.postDelayed(this, RUN_PERIOD);
         }
     };
+
+    private float[] orientation = new float[3];
+    private boolean deviceIsFlat;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -90,8 +98,8 @@ public class BuildingMapActivity extends AppCompatActivity {
         }
 
         ViewGroup.MarginLayoutParams userIconMargins = (ViewGroup.MarginLayoutParams) userIcon.getLayoutParams();
-        int newTopMargin = userIconMargins.topMargin - getDpToMove(distanceTravelled[Z_AXIS_INDEX]);
-        int newLeftMargin = userIconMargins.leftMargin - getDpToMove(distanceTravelled[X_AXIS_INDEX]);
+        int newTopMargin = userIconMargins.topMargin - getDpToMove(distanceTravelled[forwardMovementAxisIndex]);
+        int newLeftMargin = userIconMargins.leftMargin - getDpToMove(distanceTravelled[sidewaysMovementAxisIndex]);
         userIconMargins.setMargins(newLeftMargin, newTopMargin, userIconMargins.rightMargin, userIconMargins.bottomMargin);
         userIcon.setLayoutParams(userIconMargins);
     }
@@ -101,10 +109,48 @@ public class BuildingMapActivity extends AppCompatActivity {
         return Math.round(distanceTravelled * dpPerMeter);
     }
 
+    private void updateOrientation() {
+        float[] updatedOrientation = sensorHelperService.updateDirectionDeviceFacing();
+        if (updatedOrientation != null) {
+            System.arraycopy(updatedOrientation, 0, orientation, 0, 3);
+        }
+        deviceIsFlat = Math.toDegrees(orientation[Y_AXIS_INDEX]) > -45 || Math.toDegrees(orientation[Y_AXIS_INDEX]) < 45;
+        setOrientationParams(deviceIsFlat);
+        rotateIcon();
+    }
+
+    private void setOrientationParams(boolean deviceIsFlat) {
+        if (deviceIsFlat) {
+            forwardMovementAxisIndex = rotationAxisIndex = X_AXIS_INDEX;
+            sidewaysMovementAxisIndex = Z_AXIS_INDEX;
+        } else {
+            forwardMovementAxisIndex = rotationAxisIndex = Z_AXIS_INDEX;
+            sidewaysMovementAxisIndex = X_AXIS_INDEX;
+        }
+    }
+
+    private void rotateIcon() {
+        float rotationAngle = orientation[rotationAxisIndex] * -1;
+        userIcon.setRotation((float) Math.toDegrees(rotationAngle));
+    }
+
     //implement step counter together with accelerometer to improve accuracy
     //research ways to remove the affect of gravity
     //add the alpha documentation from the
     //magnetometer going in pocket, acceleration still moves same direction
     //
+    // get the variance
+    //kmann filter
+    //wieghted average
+    //get gravity over time and use average to tell if change floor / see if vibration of steps can be taken into account
+
+    // mid march report - treat like a small version of full report
+
+    //intro, analysis, design, implementation, testing/eval, conclusions,
+    //use requirements analysis for analysis section
+
+    //under what circumstances does it become inaccurate
+    //sensor fusion - taking data from multiple sensors to make a decision rather than a single sensor
+    //future work - role of machine learning
 
 }
